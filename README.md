@@ -27,7 +27,7 @@ Langkah pertama yang dilakukan adalah menyiapkan server (*Virtual Private Server
 ### Tahap 2: Pengembangan API (Go)
 Setelah infrastruktur siap, saya beralih ke *local environment* untuk membuat API sederhana menggunakan bahasa pemrograman **Go (Golang)**. Pemilihan versi Golang dan struktur kodenya didasarkan pada rekomendasi *best-practice* dari ChatGPT terkait bahasa ini [5]. API ini memiliki satu endpoint `/health` yang mengembalikan data JSON berisi nama, NRP, status server, timestamp, dan uptime.
 
-Berikut adalah file `main.go`:
+Berikut adalah file `src/main.go`:
 ```go
 package main
 
@@ -89,7 +89,7 @@ Untuk memastikan aplikasi dapat berjalan konsisten di lingkungan apapun, API dib
 
 Dalam pembuatan `Dockerfile`, saya menggunakan teknik **Multi-stage builds** [7] untuk memisahkan proses kompilasi (*builder*) dengan lingkungan *runtime*. Pada tahap *build*, saya merujuk pada dokumentasi resmi Docker untuk image Golang [3] dan menggunakan *base image* Alpine versi terbaru [1]. Saya juga secara spesifik menonaktifkan CGO (`CGO_ENABLED=0`) agar *binary* Go yang dihasilkan bersifat statis dan dapat berjalan di OS yang sangat minimalis [6]. Di tahap *run*, *container* mengekspos port `8080`, memenuhi syarat penugasan untuk tidak menjalankan API di port 80 ataupun 443.
 
-Berikut adalah file `Dockerfile`:
+Berikut adalah file `src/Dockerfile`:
 ```Dockerfile
 # build stage
 FROM golang:1.26-alpine AS builder
@@ -116,7 +116,7 @@ Dalam menyusun file *inventory*, saya menggunakan metode pembacaan file `.pem` a
 
 Selain itu, Ansible bertugas meletakkan file konfigurasi **Nginx** ke dalam VPS. Nginx dikonfigurasi sebagai *Reverse Proxy* [12] yang mendengarkan port 80 dan meng-*forward* *traffic* ke `localhost:8080` (port container API). Pemahaman dasar sintaks Nginx didapat dari dokumentasi resminya [11], yang kemudian saya improvisasi dengan menambahkan fitur *timeout*, *logging*, dan spesifikasi HTTP versi 1.1 berdasarkan *best practice* sistem *production* [13].
 
-Berikut adalah file `ansible/inventory.ini`:
+Berikut adalah file `src/ansible/inventory.ini`:
 ```ini
 [vps]
 20.194.40.78
@@ -126,7 +126,7 @@ ansible_user=lixyon
 ansible_ssh_private_key_file=~/.ssh/netics-vps_key.pem
 ```
 
-Berikut adalah file `ansible/nginx.conf`:
+Berikut adalah file `src/ansible/nginx.conf`:
 ```conf
 server {
     listen 80;
@@ -149,7 +149,7 @@ server {
 }
 ``` 
 
-Berikut adalah file `ansible/setup.yml`:
+Berikut adalah file `src/ansible/setup.yml`:
 ```yml
 ---
 - name: Setup VPS for NETICS CI/CD
