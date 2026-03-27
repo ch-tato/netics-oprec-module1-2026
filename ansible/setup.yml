@@ -1,0 +1,47 @@
+---
+- name: Setup VPS for NETICS CI/CD
+  hosts: vps
+  become: yes
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install Docker and Nginx
+      apt:
+        name:
+          - docker.io
+          - nginx
+        state: present
+    
+    - name: Ensure Docker service is running and enabled
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Add lixyon user to docker group
+      user:
+        name: lixyon
+        groups: docker
+        append: yes
+    
+    - name: Copy nginx config
+      copy:
+        src: nginx.conf
+        dest: /etc/nginx/sites-available/default
+      notify: Restart nginx
+
+    - name: Ensure nginx is running and enabled
+      systemd:
+        name: nginx
+        state: started
+        enabled: yes
+
+  handlers:
+    - name: Restart nginx
+      systemd:
+        name: nginx
+        state: restarted
