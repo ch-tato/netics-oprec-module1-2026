@@ -21,8 +21,8 @@ Langkah pertama yang dilakukan adalah menyiapkan server (*Virtual Private Server
 - **Networking:** Membuka port SSH (22), HTTP (80), dan HTTPS (443).
 - **Security:** Menggunakan autentikasi *SSH public key* dengan mengunduh file `.pem` untuk akses *remote*.
 
-![alt text](<src/img/Screenshot from 2026-03-27 17-16-28.png>)
-![alt text](<src/img/Screenshot from 2026-03-27 17-17-14.png>)
+![alt text](<media/Screenshot from 2026-03-27 17-16-28.png>)
+![alt text](<media/Screenshot from 2026-03-27 17-17-14.png>)
 
 ### Tahap 2: Pengembangan API (Go)
 Setelah infrastruktur siap, saya beralih ke *local environment* untuk membuat API sederhana menggunakan bahasa pemrograman **Go (Golang)**. Pemilihan versi Golang dan struktur kodenya didasarkan pada rekomendasi *best-practice* dari ChatGPT terkait bahasa ini [5]. API ini memiliki satu endpoint `/health` yang mengembalikan data JSON berisi nama, NRP, status server, timestamp, dan uptime.
@@ -82,7 +82,7 @@ func main() {
 	}
 }
 ```
-![alt text](<src/img/Screenshot from 2026-03-27 08-38-48.png>)
+![alt text](<media/Screenshot from 2026-03-27 08-38-48.png>)
 
 ### Tahap 3: Dockerisasi API (Containerization)
 Untuk memastikan aplikasi dapat berjalan konsisten di lingkungan apapun, API dibungkus ke dalam *container* Docker. Pemahaman dasar terkait pembuatan Dockerfile, Image, dan Container saya pelajari melalui referensi video tutorial Docker [2] serta modul *deployment* NETICS [4].
@@ -105,14 +105,14 @@ COPY --from=builder /usr/src/app/main .
 EXPOSE 8080
 CMD ["./main"]
 ```
-![alt text](<src/img/Screenshot from 2026-03-27 08-37-28.png>)
+![alt text](<media/Screenshot from 2026-03-27 08-37-28.png>)
 
 ### Tahap 4: Infrastructure as Code (Ansible) & Konfigurasi Nginx
 Proses instalasi dependensi dan konfigurasi server diotomatisasi menggunakan **Ansible**. Saya menyusun struktur *playbook* dan *inventory* berdasarkan panduan dasar modul Ansible NETICS [8][9]. 
 
 Dalam menyusun file *inventory*, saya menggunakan metode pembacaan file `.pem` agar Ansible dapat mengakses VPS Azure secara aman [10]. File `setup.yml` dibuat untuk menjalankan *tasks* instalasi *packages* menggunakan modul `apt` [14] dan memastikan *services* berjalan menggunakan modul `systemd` [15].
 
-![alt text](src/img/unnamed.png)
+![alt text](media/unnamed.png)
 
 Selain itu, Ansible bertugas meletakkan file konfigurasi **Nginx** ke dalam VPS. Nginx dikonfigurasi sebagai *Reverse Proxy* [12] yang mendengarkan port 80 dan meng-*forward* *traffic* ke `localhost:8080` (port container API). Pemahaman dasar sintaks Nginx didapat dari dokumentasi resminya [11], yang kemudian saya improvisasi dengan menambahkan fitur *timeout*, *logging*, dan spesifikasi HTTP versi 1.1 berdasarkan *best practice* sistem *production* [13].
 
@@ -200,12 +200,12 @@ Berikut adalah file `ansible/setup.yml`:
         state: restarted
 ``` 
 
-![alt text](<src/img/Screenshot from 2026-03-27 11-15-39.png>)
+![alt text](<media/Screenshot from 2026-03-27 11-15-39.png>)
 
 ### Tahap 5: Otomasi CI/CD (GitHub Actions)
 Tahap terakhir adalah membangun *pipeline* otomatisasi untuk *Continuous Integration* dan *Continuous Deployment* (*CI/CD*). Pemahaman mengenai struktur dasar *workflow*, eksekusi *jobs*, dan *steps* didapat dari referensi sintaks resmi GitHub [18] serta video pengenalan CI/CD [17] dan modul Github yang diberikan NETICS sendiri [16].
 
-![alt text](<src/img/Screenshot from 2026-03-27 16-32-15.png>)
+![alt text](<media/Screenshot from 2026-03-27 16-32-15.png>)
 
 File `.github/workflows/deploy.yml` dirancang menggunakan variabel kontekstual GitHub (`${{ ... }}`) [20] dan terdiri dari dua tugas utama yaitu sebagai berikut.
 1. **Build and Push Image:** Mengunduh repositori menggunakan `actions/checkout` [23], *login* ke GitHub Container Registry (GHCR) menggunakan `docker/login-action` [22], lalu mem-*build* dan mendorong *image* menggunakan `docker/build-push-action` [24]. Penyimpanan *image* dilakukan di GHCR karena integrasinya yang *seamless* dengan GitHub [19].
@@ -280,8 +280,8 @@ jobs:
             docker image prune -f
 
 ```
-![alt text](<src/img/Screenshot from 2026-03-27 16-53-20.png>)
-![alt text](<src/img/Screenshot from 2026-03-27 16-54-44.png>)
+![alt text](<media/Screenshot from 2026-03-27 16-53-20.png>)
+![alt text](<media/Screenshot from 2026-03-27 16-54-44.png>)
 
 ---
 
@@ -304,14 +304,14 @@ Selama pengerjaan, terdapat beberapa kendala teknis yang berhasil diselesaikan m
    *Pipeline* gagal saat proses *build and push* dengan pesan error terkait `buildx failed`, yang disebabkan oleh penggunaan fitur *caching* (`type=gha`) tanpa inisialisasi Docker Buildx di server GitHub.
    - **Solusi:** Menambahkan *step* `docker/setup-buildx-action` sebelum proses *login* dan *build* untuk mengaktifkan dukungan *caching*.
 
-   ![alt text](<src/img/Screenshot from 2026-03-27 16-26-02.png>)
+   ![alt text](<media/Screenshot from 2026-03-27 16-26-02.png>)
 
 4. **Error Autentikasi SSH via Appleboy di GitHub Actions**
 
    *Job deploy* gagal dengan pesan *handshake failed: unable to authenticate*. Setelah melakukan investigasi mendalam dengan menyalakan *debug logging* (mode *trace*), ditemukan bahwa Github membaca variabel username sebagai `null`.
    - **Solusi:** Memperbaiki *typo* nama variabel di file `deploy.yml`. Nama *secret* di pengaturan GitHub adalah `VPS_USERNAME`, sedangkan di file `.yml` ditulis `VPS_USER`. Setelah disamakan, SSH berhasil masuk dengan lancar.
    
-   ![alt text](<src/img/Screenshot from 2026-03-27 16-34-01.png>)
+   ![alt text](<media/Screenshot from 2026-03-27 16-34-01.png>)
 
 ---
 
