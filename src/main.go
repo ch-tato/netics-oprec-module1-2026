@@ -26,7 +26,7 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	response := HealthResponse{
-		Nama:      "Muhammad Quthbi Danish Abqori",
+		Nama:      "Jokowi",
 		NRP:       "5025241036",
 		Status:    "UP",
 		Timestamp: time.Now().Format(time.RFC3339),
