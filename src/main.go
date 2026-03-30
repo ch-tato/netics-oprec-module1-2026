@@ -43,7 +43,7 @@ func main() {
 
 	http.HandleFunc("/health", healthHandler)
 
-	port := ":8080"
+	port := "127.0.0.1:8080"
 	log.Printf("API Server is running on port %s...", port)
 
 	if err := http.ListenAndServe(port, nil); err != nil {
